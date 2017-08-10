@@ -31,100 +31,7 @@ void sichere(bool bedingung,const char* text)
     }
 }
 
-/* Feld mit sehr grosser Anzahl von 3bit-Zaehlern */
-class Zaehlerfeld3bit
-{
-   uint8_t* m_rohFeld;
-   uint64_t m_groesse;
-public:
-   Zaehlerfeld3bit(uint64_t groesse):m_groesse(groesse)
-   {
-       uint64_t anzahlOktets = 3*m_groesse/8 + 1;
-       m_rohFeld = new uint8_t[anzahlOktets];
-       sichere( m_rohFeld != NULL, "Speicher anlegen"); 
-       memset(m_rohFeld,0,anzahlOktets);
-   }
 
-   uint8_t bei(uint64_t stelle)
-   {
-      if( stelle < m_groesse )
-      {
-         uint64_t bitStelle = stelle * 3;
-         uint64_t oktetStelle = bitStelle / 8;
-         uint8_t versatz = bitStelle % 8;
-         if( versatz < 6 )
-         {
-             return (m_rohFeld[oktetStelle] >> versatz) & 0x7;
-         }
-         else
-         {
-             
-             uint8_t oktetLinks = m_rohFeld[oktetStelle];
-             uint8_t oktetRechts = m_rohFeld[oktetStelle+1];
-             oktetLinks >>= versatz;
-             oktetRechts <<= (8-versatz);
-             
-             uint8_t oktetGesamt = (oktetLinks | oktetRechts) & 0x7;
-             return oktetGesamt;
-         }
-      }
-      sichere(false,"gueltige Stelle");
-      return 0xFF;
-   }
-
-   void setze(uint64_t stelle, uint8_t wert)
-   {
-      sichere(stelle < m_groesse,"index gueltig");
-      sichere(wert < 8,"Wertebereich");
-      uint64_t bitStelle = stelle * 3;
-      uint64_t oktetStelle = bitStelle / 8;
-      uint8_t versatz = bitStelle % 8;
-
-      uint8_t maske = 0x7;
-      maske <<= versatz;
-      maske ^= 0xFF;
-      if( versatz < 6 )
-      {
-          wert <<= versatz;
-          uint8_t altWert = m_rohFeld[oktetStelle];
-          
-          altWert &= maske;
-          altWert |= wert;
-          m_rohFeld[oktetStelle] = altWert;
-      }
-      else
-      {
-          uint8_t altWertLinks = m_rohFeld[oktetStelle];
-          altWertLinks &= maske;
-          altWertLinks |= (wert << versatz);
-          m_rohFeld[oktetStelle] = altWertLinks;
-          uint8_t altWertRechts = m_rohFeld[oktetStelle+1];
-          uint8_t maskeRechts = 0x7;
-          maskeRechts >>= (8-versatz); 
-          maskeRechts ^= 0xFF;
-          altWertRechts &= maskeRechts;          
-          altWertRechts |= (wert >> (8-versatz));
-          m_rohFeld[oktetStelle+1] = altWertRechts;
-      }
-   }
-
-   void zaehleHoch(uint64_t stelle)
-   {
-      uint8_t wert = bei(stelle);
-      if( wert < 7 )
-      {
-         wert++;
-         setze(stelle,wert);
-      }
-   }
-
-   ~Zaehlerfeld3bit()
-   {
-      delete[] m_rohFeld;
-      m_rohFeld = NULL;
-   }
-    
-};
 
 uint32_t sha256_streusumme(const void* eingabe,size_t groesse)
 {
@@ -142,12 +49,26 @@ uint32_t sha256_streusumme(const void* eingabe,size_t groesse)
    return ergebnis;
 }
 
-uint32_t nZahlen = 1000000;
+//uint32_t nZahlen = 999983;//Primzahl nahe 1 Million
+//uint32_t nZahlen = 1000000;
+uint32_t nZahlen;
 
+void setzeNull(vector<uint32_t>& v)
+{
+   for(uint32_t i=0; i < v.size(); i++)
+   {
+     v.at(i) = 0;
+   }
+}
+
+ 
 void druckeHistogramm(vector<uint32_t>& zaehlerFeld, uint32_t maxHaeufigkeit)
 {
    vector<uint32_t> histogramm;
    histogramm.resize(maxHaeufigkeit+1);
+
+   setzeNull(histogramm);
+
    for(uint64_t i=0; i < zaehlerFeld.size(); i++)
    {
       uint32_t anz = zaehlerFeld.at(i);
@@ -166,7 +87,11 @@ void druckeHistogramm(vector<uint32_t>& zaehlerFeld, uint32_t maxHaeufigkeit)
        summe += histogramm.at(i);
        cout << i << " " << histogramm.at(i) << endl;
    }
-   cout << "mehr als " << maxHaeufigkeit << " " << histogramm.at(maxHaeufigkeit) << endl;
+   sichere(summe <= nZahlen, "Summe in druckeHistogramm");
+   if( histogramm.at(maxHaeufigkeit) > 0 )
+   {
+      cout << "mehr als " << maxHaeufigkeit << " " << histogramm.at(maxHaeufigkeit) << endl;
+   }
 }
 
 
@@ -176,10 +101,11 @@ void PruefungZahlen( uint32_t (*StreuFunktion)(const void*,size_t groesse) )
     
    vector<uint32_t> zaehlerFeld;
    zaehlerFeld.resize(nZahlen);
+   setzeNull(zaehlerFeld);
    for(uint32_t i=0; i < nZahlen; i++)
    {
-      uint32_t stelle = StreuFunktion(&i,sizeof(uint32_t));
-      zaehlerFeld.at(stelle%nZahlen)++;
+      uint32_t stelle = StreuFunktion(&i,sizeof(uint32_t)) % nZahlen;
+      zaehlerFeld.at(stelle )++;
    }
    druckeHistogramm(zaehlerFeld,200);
 }
@@ -190,11 +116,14 @@ void PruefungZahlenAbstand( uint32_t (*StreuFunktion)(const void*,size_t groesse
    cout << "Pruefung Zahlen mit Abstand 100" << endl; 
    vector<uint32_t> zaehlerFeld;
    zaehlerFeld.resize(nZahlen);
+
+   setzeNull(zaehlerFeld);
+
    for(uint32_t i=0; i < nZahlen; i++)
    {
       uint32_t pruefZahl = i * 100;
-      uint32_t stelle = StreuFunktion(&pruefZahl,sizeof(uint32_t));
-      zaehlerFeld.at(stelle%nZahlen)++;
+      uint32_t stelle = StreuFunktion(&pruefZahl,sizeof(uint32_t)) % nZahlen;
+      zaehlerFeld.at(stelle)++;
    }
    druckeHistogramm(zaehlerFeld,200);
 }
@@ -207,6 +136,9 @@ void PruefungZeichenketten(uint32_t (*StreuFunktion)(const void*,size_t groesse)
    strcpy(puffer,"AntonBmann"); 
    vector<uint32_t> zaehlerFeld;
    zaehlerFeld.resize(nZahlen);
+
+   setzeNull(zaehlerFeld);
+
    for(uint32_t i=0; i < nZahlen; i++)
    {
       uint32_t dazu = i*1017/11;
@@ -214,11 +146,8 @@ void PruefungZeichenketten(uint32_t (*StreuFunktion)(const void*,size_t groesse)
       puffer[10] = 0;
       sprintf(puffer2,"%d",dazu);
       strcat(puffer,puffer2);
-
-      //cout << puffer << endl;
-
-      uint32_t stelle = StreuFunktion(puffer,strlen(puffer));
-      zaehlerFeld.at(stelle%nZahlen)++;
+      uint32_t stelle = StreuFunktion(puffer,strlen(puffer)) % nZahlen;
+      zaehlerFeld.at(stelle)++;
    }
    druckeHistogramm(zaehlerFeld,200);
 }
@@ -231,6 +160,8 @@ void PruefungZeichenkettenLang(uint32_t (*StreuFunktion)(const void*,size_t groe
    vector<uint32_t> zaehlerFeld;
    zaehlerFeld.resize(nZahlen);
 
+   setzeNull(zaehlerFeld);
+
    uint32_t lB = strlen(puffer);
    for(uint32_t i=0; i < nZahlen; i++)
    {
@@ -240,10 +171,8 @@ void PruefungZeichenkettenLang(uint32_t (*StreuFunktion)(const void*,size_t groe
       sprintf(puffer2,"%d",dazu);
       strcat(puffer,puffer2);
 
-      //cout << puffer << endl;
-
-      uint32_t stelle = StreuFunktion(puffer,strlen(puffer));
-      zaehlerFeld.at(stelle%nZahlen)++;
+      uint32_t stelle = StreuFunktion(puffer,strlen(puffer)) % nZahlen;
+      zaehlerFeld.at(stelle)++;
    }
    druckeHistogramm(zaehlerFeld,200);
 }
@@ -386,6 +315,7 @@ uint32_t jenkins_one_at_a_time_hash(const void* vkey, size_t length)
   return hash;
 }
 
+//Einfache Funktion von Frank Gerlach mit guter Qualität, aber nicht der besten Laufzeit
 uint32_t FGMult(const void* vkey, size_t length) 
 {
   const char* key = (const char*)vkey;
@@ -401,111 +331,119 @@ uint32_t FGMult(const void* vkey, size_t length)
   return zustand;
 }
 
+uint32_t FGMult_ww(const void* vkey, size_t length) 
+{
+
+  uint64_t zustand = 123456789123456789ll;
+
+  const uint64_t* zeiger = (uint64_t*)vkey;
+
+  while(length >= 8 )
+  {
+      zustand = zustand * (*zeiger) + (zustand >> 28);
+      zustand = (zustand*987651987651)+ (zustand >> 34) ;
+      zeiger++;
+      length -=8;
+  }  
+ 
+  zustand ^= FGMult(zeiger,length);
+
+  
+
+  return uint32_t(zustand);
+}
+
+uint32_t FG_ww_shift(const void* vkey, size_t length) 
+{
+
+  uint64_t zustand = 123456789123456789ll;
+
+  const uint64_t* zeiger = (uint64_t*)vkey;
+
+  while(length >= 8 )
+  {
+      zustand = zustand + (*zeiger);
+      zustand += zustand << 20;
+      zustand ^= zustand >> 12;
+
+      zeiger++;
+      length -=8;
+  }  
+  zustand ^= FGMult(zeiger,length);
+
+  zustand += zustand << 6;
+  zustand ^= zustand >> 22;
+  zustand += zustand << 30;
+
+  return uint32_t(zustand);
+}
+
 extern uint32_t crc32_messagecalc2(const void *data, size_t len);//zweite CRC Implementierung zur Kontrolle
+
+void pruefProzedur( uint32_t (*StreuFunktion)(const void*,size_t groesse), const char* nameStreufunktion)
+{
+    cout << "=========================================================================================" << endl;
+    cout << nameStreufunktion << ":" << endl;
+    cout << "Zahlen zusammenhaengend: " << endl << endl;
+    PruefungZahlen(StreuFunktion);
+    cout << "======================================" << endl;
+    cout << "Zahlen im Abstand 100: " << endl;
+    PruefungZahlenAbstand(StreuFunktion);
+    cout << "======================================" << endl;
+    cout << "Zeichenketten: " << endl;
+    PruefungZeichenketten(StreuFunktion);
+    cout << "======================================" << endl;
+    cout << "Zeichenketten lang: " << endl;
+    PruefungZeichenkettenLang(StreuFunktion);
+}
 
 
 
 int main(int argc, char** argv)
 {
-   int szenario = atoi(argv[1]);
+   uint32_t GroesseFeld = atoi(argv[1]);
+   nZahlen  = GroesseFeld;
+   int szenario = atoi(argv[2]);
 
-   const int n=100;
-   Zaehlerfeld3bit zf3(n);
-   for(int i=0; i < n; i++)
-   {
-      zf3.setze(i,i%8);
-   }
-   for(int i=0; i < n; i++)
-   {
-      assert(zf3.bei(i) == (i%8));
-   }
-
+  
    switch(szenario)
    {
        case 0:
-               cout << "Suchoi: " << endl;
-               PruefungZahlen(suchoi_void);
-               PruefungZahlenAbstand(suchoi_void);
-               PruefungZeichenkettenLang(suchoi_void);
+               pruefProzedur(suchoi_void,"Suchoi");               
        break;
 
-       case 1:
-               cout << "SHA256: " << endl;
-               PruefungZahlen(sha256_streusumme);
-               PruefungZahlenAbstand(sha256_streusumme);
+       case 1: 
+               pruefProzedur(sha256_streusumme,"SHA256"); 
        break;
 
-       case 2:      
-               cout << "Adler32(Zahlen): " << endl;
-               PruefungZahlen(adler32);
-               PruefungZahlenAbstand(adler32);
+       case 2:     
+               pruefProzedur(adler32,"Adler32");  
        break;
-       case 3:      
-               cout << "Suchoi(Zeichenketten): " << endl;
-               PruefungZeichenketten(suchoi_void);
-       break;
-       case 4:      
-               cout << "SHA256(Zeichenketten): " << endl;
-               PruefungZeichenketten(sha256_streusumme);
-       break;
-       case 5:      
-               cout << "Adler32(Zeichenketten): " << endl;
-               PruefungZeichenketten(adler32);
-       break;
-       case 6:      
-               cout << "Murmurhash: " << endl;
-               PruefungZeichenketten(MurmurHash2_streusumme);
+       
+       case 3: 
+               pruefProzedur(MurmurHash2_streusumme,"MurmurHash");     
        break;
 
-       case 7:      
-               cout << "Paul Larson (Zeichenketten): " << endl;
-               PruefungZeichenketten(PaulLarsonStreu);
+       case 4: 
+               pruefProzedur(PaulLarsonStreu,"Paul Larson");          
+       break;
+       
+       case 5:
+               pruefProzedur(crc32b,"CRC32");    
+       break;
+       case 6:
+               pruefProzedur(PJW_ElfHash,"PJW");
+       break;
+       case 7:
+               pruefProzedur(FGMult,"FGMult");
        break;
        case 8:
-               cout << "Paul Larson (Zahlen): " << endl;
-               PruefungZahlen(PaulLarsonStreu);
-               PruefungZahlenAbstand(PaulLarsonStreu);
+               pruefProzedur(FGMult_ww,"FGMult_ww");
        break;
+
        case 9:
-               cout << "CRC32 (Zahlen): " << endl;
-               PruefungZahlen(crc32b);
-               PruefungZahlenAbstand(crc32b);
-               cout << "CRC32 (Zeichenkette): " << endl;
-               PruefungZeichenketten(crc32b);
+               pruefProzedur(FG_ww_shift,"FG_ww_shift");               
        break;
-       case 10:
-               cout << "CRC32_2 (Zahlen): " << endl;
-               PruefungZahlen(crc32_messagecalc2);
-               PruefungZahlenAbstand(crc32_messagecalc2);
-               cout << "CRC32 (Zeichenkette): " << endl;
-               PruefungZeichenketten(crc32_messagecalc2);
-       break;
-       case 11:
-               cout << "PJW (Zahlen): " << endl;
-               PruefungZahlen(PJW_ElfHash);
-               PruefungZahlenAbstand(PJW_ElfHash);
-               cout << "PJW (Zeichenkette): " << endl;
-               PruefungZeichenketten(PJW_ElfHash);
-       break;
-       case 12:
-               cout << "Jenkins One At A Time (Zahlen): " << endl;
-               PruefungZahlen(jenkins_one_at_a_time_hash);
-               PruefungZahlenAbstand(jenkins_one_at_a_time_hash);
-               cout << "Jenkins One At A Time (Zeichenkette): " << endl;
-               PruefungZeichenketten(jenkins_one_at_a_time_hash);
-       break;
-
-       case 13:
-               cout << "FGMult (Zahlen): " << endl;
-               PruefungZahlen(FGMult);
-               PruefungZahlenAbstand(FGMult);
-               cout << "FGMult (Zeichenkette): " << endl;
-               PruefungZeichenketten(FGMult);
-               PruefungZeichenkettenLang(FGMult);
-       break;
-
-
-
 
    }
 

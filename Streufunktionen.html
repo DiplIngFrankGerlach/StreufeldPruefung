@@ -1,0 +1,335 @@
+<html>
+
+<body>
+
+<h1>Kanonische L&ouml;sung des Problems der Streufunktionen</h1>
+
+von Dipl. Ing.(BA) Frank Gerlach (frankgerlach.tai@gmx.de)
+
+<h2>1. Das Problem</h2>
+
+<p>
+Streufelder (engl. Hashtables)  ben&ouml;tigen f&uuml;r ihre effiziente Funktion (Zugriffskomplexit&auml;t O(1)) qualitativ hochwertige Streufunktionen. Streufelder sind die Leistungs-bestimmenden Datenstrukturen vieler wichtiger DV-Systeme wie z.B. &Uuml;bersetzer oder
+auch in der statistischen Massendatenauswertung ("Big Data").
+
+Genauer gesagt mu&szlig; die Streufunktion f&uuml;r eine Menge von Eingabe-Schl&uuml;sseln ME (typischerweise Zeichenketten variabler L&auml;nge) eine Menge MS an Streuwerten (typischerweise Ganzzahlen 16, 32 oder 64 bit) liefern. Die Menge MS wird dabei im Allgemeinen Fall immer mindestens 36% kleiner als der die Menge der m&ouml;glichen Zahlenwerte MZW sein. Im Falle sub-optimaler Streufunktionenwird MS noch wesentlich kleiner sein, bis hin zu 10% von MZW !
+
+Diese Untersuchung wird aufzeigen, dass weithin bekannte Streufunktionen wie z.B. ADLER32 sub-optimal sind und durch bessere
+Streufunktionen auf Grundlage stark nichtlineaerer Funktionen ("S-Boxen") ersetzt werden sollten.
+</p>
+
+<h2>2. Die Qualitativ Optimale Streufunktion</h2>
+<p>
+Durch einfache logische &Uuml;berlegung kann gezeigt werden, dass kryptografisch starke Streufunktionen (KSSF) wie z.B. MD5 oder SHA
+gleichzeit <b>optimale</b> Streufunktionen f&uuml;r die Anwendung in Streufeldern sind:
+</p>
+KSSFs wurden entwickelt, um f&uuml;r beliebige Datenstrukturen eine "kryptografisch starke" Pr&uuml;fsumme zu berechnen. Die &Auml;nderung
+eines einzigen oder mehr Bits in der Eingabe soll dabei im Mittel 50% der Ausgabebits (eine Pr&uuml;fsumme der L&auml;nge 128 oder 256 bit)
+umkippen lassen. Zudem soll es sehr schwer sein, die Eingabe so zu modifizieren, da&szlig; dieselbe Pr&uuml;summe nach einer Modifikation
+erzielt wird. Diese Anforderungen erreicht schon die relativ alte Streufunktion MD5 mit sehr hoher Perfektion. 
+Fast genau dieselben Anforderungen werden an eine Streufunktion eines Streufeldes gestellt, allerdings mit der Abschw&auml;chung
+da&szlig; bei einer Streufunktion i.d.R. keine Resistenz gegen gezielte "Dokumentenf&auml;lschung" gestellt wird. 
+</p>
+
+<b>Die kanonisch besten Streufunktionen sind kryptografisch starke Streufunktionen (KSSFs). Es gibt keine qualitativ besseren, sondern allenfalls Funktionen mit geringerer Laufzeit, was nat&uuml;rlich ein wichtiger Aspekt ist.</b> Verschiedene Autoren im 
+Internet behaupten, Streufunktionen f&uuml;r Streufelder m&uuml;ssten "dem Problem angepasst" entwickelt werden. Dies ist nicht korrekt.
+KSSFs sind qualitativ optimale Streufunktionen - f&uuml;r alle Anwendungen von Streufeldern.
+
+<h2>3. Streufunktionen im Leistungsvergleich</h2>
+<p>
+Im Folgenden wird die "Streuwirkung" von Streufunktionen empirisch ermittelt. Dabei wird eine synthetische Menge von Schl&uuml;sseln
+erzeugt und danach mit Hilfe eines einfachen Z&auml;hlerfeldes (Mit derselben Anzahl Felder wie die Anzahl der Schl&uuml;ssel) die Menge
+der Kollisionen pro Feldeintrag ermittelt. Danach wird mittels eines Histogramms eine Aussage &uuml;ber die Menge der Kollisionen und
+damit die Qualit&auml;t der Streufunktion gemacht. 
+</p>
+
+
+<h3>2.2 Leistungsvergleich 1 - 1000000 Ganzzahlen als Schl&uuml;ssel</h3>
+
+<p>
+Bei diesem Vergleich werden die Zahlen von 0 bis 999999 sowie Zeichenkette mit angeh&auml;ngter Zahl als Schl&uuml;sselmenge benutzt. Diese Feldlaenge ist eine Primzahl,
+was f&uuml;r schwache Streufunktionen von gro&szlig;er Bedeutung ist. Von den vier Szenarien wird das schlechteste als Ergebnis gew&auml;hlt.
+</p>
+
+ <table border=1>
+  <tr>
+    <th>Funktion</th>
+    <th>CPU-Laufzeit [ms]</th>
+    <th>Histogramm der Feld-Nutzung</th>
+    <th>Kommentar</th>
+  </tr>
+  <tr>
+    <td>SHA256</td>
+    <td>2949</td>
+    <td> 0 367782<br/>
+         1 368322<br/>
+         2 183480<br/>
+         3 61238<br/>
+         4 15519<br/>
+         5 3040<br/>
+         6 518<br/>
+         7 74<br/>
+         8 7<br/>
+         9 1<br/>
+         10 2<br/>
+          
+    </td>    
+    <td> Die Optimale Streufunktion schafft es also, 73% eines Streufeldes zu nutzen. Die Anzahl der Felder mit mehr als 5 Kollisionen ist minimal. 
+         Laufzeit ist jedoch relativ hoch.
+  </tr>
+  <tr>
+    <td>ADLER32</td>
+    <td>746</td>
+    <td>0 989199<br/>
+         1 1567<br/>
+         2 858<br/>
+         3 599<br/>
+         4 422<br/>
+         5 341<br/>
+         6 317<br/>
+         7 248<br/>
+         8 237<br/>
+         9 196<br/>
+         10 200<br/>
+         11 161<br/>
+         12 158<br/>
+         13 128<br/>
+         14 116<br/>
+         15 98<br/>
+         16 102<br/>
+         17 86<br/>
+         18 88<br/>
+         19 76<br/>
+         - weitere ca 200 Abgeschnitten ! - <br/>
+         
+    </td>   
+    <td> Diese Streufunktion schafft es also gerade einmal, etwa 2% der Streutabelle &uuml;berhaupt auszunutzen ! Die Laufzeit ist auch nicht die Beste.</td> 
+  </tr>
+  <tr>
+    <td>Suchoi</td>
+    <td>632</td>
+    <td>
+         0 368207<br/>
+         1 367533<br/>
+         2 183877<br/>
+         3 61229<br/>
+         4 15388<br/>
+         5 3143<br/>
+         6 515<br/>
+         7 78<br/>
+         8 11<br/>
+         9 2<br/>
+    </td>    
+    <td> Diese Funktion (Eigentwicklung des Autors) ist keine KSSF, zeigt aber fast identische Qualit&auml;t. Zudem ist die Laufzeit kurz.</p>
+  </tr>
+
+  <tr>
+    <td>Paul Larson</td>
+    <td>537</td>
+    <td> 
+         0 385575<br/>
+         1 341350<br/>
+         2 185129<br/>
+         3 67228<br/>
+         4 17264<br/>
+         5 3017<br/>
+         6 391<br/>
+         7 28<br/>
+         8 1<br/>
+
+    </td>    
+    <td> Scheinbar eine sehr gute Funktion. Allerdings sind diese guten Werte <b>NUR</b> mit einer primalen Feldgroesse zu erreichen. 
+         Im Falle einer Zweierpotentz als Feldgroesse, reduziert sich z.B. die Feldauslastung auf ca 20% im schlechtesten Fall.  </p>
+  </tr>
+
+
+  <tr>
+    <td>Paul Larson mit Feldgroesse 2^20 (1048576)</td>
+    <td>537</td>
+    <td> 
+         0 405278<br/>
+         1 357530<br/>
+         2 193225<br/>
+         3 70044<br/>
+         4 18559<br/>
+         5 3455<br/>
+         6 443<br/>
+         7 41<br/>
+         8 1<br/>
+
+    </td>    
+    <td> Hier kann man die schlechtere Qualit&auml;t dieser Funktion im Falle einer nicht-primalen Feldgr&ouml;sse sehen. Nur 59% des Feldes wird genutzt.  </p>
+  </tr>
+
+  <tr>
+    <td>CRC32</td>
+    <td>1820</td>
+    <td> 
+         0 382424<br/>
+         1 389086<br/>
+         2 194385<br/>
+         3 63966<br/>
+         4 15302<br/>
+         5 2928<br/>
+         6 429<br/>
+         7 48<br/>
+         8 8
+
+    </td>    
+    <td> Eine (fast) optimale Hashfunktion, allerdings mit relativ langer Laufzeit.   </p>
+  </tr>
+
+  <tr>
+    <td>PJW</td>
+    <td>518</td>
+    <td> 
+         0 1010176<br/>
+         1 512<br/>
+         2 768<br/>
+         3 512<br/>
+         4 768<br/>
+         5 512<br/>
+         6 768<br/>
+         7 512<br/>
+         8 256<br/>
+         9 0<br/>
+         10 256<br/>
+         11 0<br/>
+         12 256<br/>
+         13 0<br/>
+         14 256<br/>
+         15 0<br/>
+         16 256<br/>
+         17 0<br/>
+         18 0<br/>
+         19 0<br/>
+         20 0<br/>
+         21 0<br/>
+         22 0<br/>
+         23 0<br/>
+         24 512<br/>
+         25 1024<br/>
+         26 1024<br/>
+         27 1024<br/>
+         28 1024<br/>
+         29 1024<br/>
+         30 1024<br/>
+         31 1024<br/>
+         32 25088
+    </td>    
+    <td> Eine qualitativ sehr schlechte Streufunktion.</p>
+  </tr>
+
+  <tr>
+    <td>FGMult</td>
+    <td>711</td>
+    <td> 
+         0 385681<br/>
+         1 385648<br/>
+         2 193164<br/>
+         3 64274<br/>
+         4 15994<br/>
+         5 3199<br/>
+         6 524<br/>
+         7 77<br/>
+         8 14<br/>
+         9 0<br/>
+         10 0<br/>
+         11 0<br/>
+         12 1<br/>
+
+    </td>    
+    <td> Eine (fast) optimale Streufunktion des Autors. Benutzt Multiplikation als Nichtlinearit&auml;t</p>
+  </tr>
+
+  <tr>
+    <td>FGMult_ww</td>
+    <td>441</td>
+    <td> 
+         0 385681<br/>
+         1 385648<br/>
+         2 193164<br/>
+         3 64274<br/>
+         4 15994<br/>
+         5 3199<br/>
+         6 524<br/>
+         7 77<br/>
+         8 14<br/>
+         9 0<br/>
+         10 0<br/>
+         11 0<br/>
+         12 1
+    </td>    
+    <td> Eine (fast) optimale Streufunktion des Autors. Benutzt 64-bit Multiplikation als Nichtlinearit&auml;t</p>
+  </tr>
+
+  <tr>
+    <td>FG_ww_shift</td>
+    <td>428</td>
+    <td> 
+         0 391497<br/>
+         1 380297<br/>
+         2 189669<br/>
+         3 65032<br/>
+         4 17511<br/>
+         5 3779<br/>
+         6 660<br/>
+         7 108<br/>
+         8 17<br/>
+         9 6
+
+    </td>    
+    <td> Eine (fast) optimale Streufunktion des Autors. Benutzt 64-bit Bitverschiebung und Additionsoperationen</p>
+  </tr>
+
+  <tr>
+    <td>MurmurHash</td>
+    <td>432</td>
+    <td> 
+         0 385907<br/>
+         1 386037<br/>
+         2 192137<br/>
+         3 64411<br/>
+         4 16142<br/>
+         5 3300<br/>
+         6 551<br/>
+         7 75<br/>
+         8 13<br/>
+         9 2<br/>
+         10 0<br/>
+         11 1<br/>
+
+
+    </td>    
+    <td> Eine (fast) optimale Streufunktion. <b>Diese Funktion ist Teil der libc sowie der STL auf Linux.</b>  Die Laufzeit ist ebenfalls sehr gut.</p>
+  </tr>
+
+</table> 
+
+
+<h2> 3. Diskussion und Schlussfolgerungen </h2>
+
+Es gibt im Internet eine Menge zweitklassiger Hashfunktionen wie z.B. ADLER32 oder PJW. Zudem wird oft behauptet, es g&auml;be keine optimale und universelle Hashfunktion 
+f&uuml;r alle Anwendungsf&auml;lle. Dies ist offensichtlicher Unsinn und wird durch Streufunktionen wie <b>SHA256, Suchoi und Murmurhash</b> widerlegt. Es zeigt sich leider, dass
+das Internet im Falle einer oberfl&auml;chlichen Recherche mit Google Fehlinformationen liefert. Diese Seite soll dazu beitragen, dieses Defizit zu beheben.
+
+<h2> 4. Praktische Empfehlung</h2>
+
+Benutzen Sie immer Suchoi oder Murmurhash. 
+
+
+<h2> 5. Verwendete Hardware, Algorithmen</h2>
+
+<p>
+Es wurde ein "Intel(R) Core(TM) i5-6200U CPU @ 2.30GHz" f&uuml;r die Leistungsmessungen benutzt. 
+
+Der Quellcode kann von <a href="https://github.com/DiplIngFrankGerlach/StreufeldPruefung">GIT</a> heruntergeladen werden.
+</p>
+
+
+<a href="Impressum.html">Impressum</a>
+
+</body>
+
+</html>
+
