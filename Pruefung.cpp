@@ -13,6 +13,7 @@
 #include <memory.h>
 #include <stdio.h>
 #include "suchoi.h"
+#include "suchoi2.h"
 #include "Adler32.h"
 #include <vector>
 #include "sha256.h"
@@ -183,6 +184,8 @@ uint32_t suchoi_void(const void* input, size_t input_size)
 {
    return suchoi((const char*)input, input_size);
 }
+
+
 
 unsigned int MurmurHash2 ( const void * key, int len, unsigned int seed )
 {
@@ -443,6 +446,13 @@ int main(int argc, char** argv)
 
        case 9:
                pruefProzedur(FG_ww_shift,"FG_ww_shift");               
+       break;
+
+       case 10:
+               pruefProzedur(jenkins_one_at_a_time_hash,"Jenkins One At A Time");               
+       break;
+       case 11:
+               pruefProzedur(suchoi2,"Suchoi2");               
        break;
 
    }
