@@ -5,4 +5,5 @@ g++ -Wall -O2  -I. \
      Adler32.c \
      sha256.c \
      crc_mcn.c \
+     boelkow.cpp \
      -o SFPruefung

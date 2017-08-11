@@ -17,6 +17,7 @@
 #include "Adler32.h"
 #include <vector>
 #include "sha256.h"
+#include "boelkow.h"
 
 
 
@@ -244,6 +245,11 @@ uint32_t  MurmurHash2_streusumme ( const void * key, size_t len)
    return MurmurHash2(key,len,1234567);
 }
 
+uint32_t  boelkow32( const void * key, size_t len)
+{
+   return (uint32_t)boelkow(key,len);
+}
+
 
 /*this functions is allegedly from Paul Larson, Microsoft Research */
 uint32_t PaulLarsonStreu(const void* s, size_t lenOktets)
@@ -454,6 +460,10 @@ int main(int argc, char** argv)
        case 11:
                pruefProzedur(suchoi2,"Suchoi2");               
        break;
+       case 12:
+               pruefProzedur(boelkow32,"Boelkow");               
+       break;
+    
 
    }
 
