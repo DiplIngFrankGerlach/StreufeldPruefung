@@ -52,7 +52,8 @@ const uint8_t pi264[] =  {
 
 /*******************************************************
  * Streufunktion BOELKOW zur Verwendung in Streufeldern
- * 
+ *
+ * Benannt nach Ludwig Bölkow, Flugzeug-Konstrukteur 
  * 
  * Autor: Frank Gerlach
  *
@@ -67,7 +68,7 @@ uint64_t boelkow(const void* eingabe, size_t laenge)
     for(size_t stelle = 0; stelle < laenge; stelle++)
     {
        uint64_t* piFunc = (uint64_t*) &pi264[eingabeOktets[stelle]];      
-       zustand ^= *piFunc;
+       zustand += *piFunc;
        zustand = rotiere(zustand,3);
     }
     return zustand;
