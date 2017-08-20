@@ -160,6 +160,25 @@ Die Feldlaenge ist, falls nicht anders angegeben, 1000000. Von den vier Szenarie
   </tr>
 
   <tr>
+    <td>Verbesserte Suchoi-Funktion "Suchoi2"</td>
+    <td>681</td>
+    <td>
+         0 386132<br/>
+         1 385381<br/>
+         2 192729<br/>
+         3 64292<br/>
+         4 16105<br/>
+         5 3281<br/>
+         6 573<br/>
+         7 70<br/>
+         8 9<br/>
+         9 4
+    </td>    
+    <td>Im Vergleich zu Suchoi werden am Schluss noch vier Rotationen des Zustands miteinander XOR-verkn&uuml;pft. Auch im Falle der Feldgroesse 2^20
+        erzielt der Algorithmus damit sehr gute Ergebnisse.</td>
+  </tr>
+
+  <tr>
     <td>Paul Larson</td>
     <td>537</td>
     <td> 
@@ -329,6 +348,25 @@ Die Feldlaenge ist, falls nicht anders angegeben, 1000000. Von den vier Szenarie
          9 2
     </td>    
     <td> Eine (fast) optimale Streufunktion. <b>Diese Funktion ist Teil der libc sowie der STL auf Linux.</b>  Die Laufzeit ist ebenfalls sehr gut.</p>
+  </tr>
+
+  <tr>
+    <td>B&ouml;lkow</td>
+    <td>465</td>
+    <td> 
+         0 385594<br/>
+         1 385994<br/>
+         2 192869<br/>
+         3 64277<br/>
+         4 15935<br/>
+         5 3279<br/>
+         6 534<br/>
+         7 81<br/>
+         8 10<br/>
+         9 3
+
+    </td>    
+    <td> Fast optimale Streufunktion des Autors auf Basis einer nichtlineaeren Funktion. Laufzeit ebenso konkurrenzf&auml;hig.</p>
   </tr>
 
 </table> 
